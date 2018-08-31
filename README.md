@@ -33,6 +33,8 @@ python MLP.py --dataset ml-1m --epochs 1 --batch_size 256 --layers [64,32,16,8] 
 Run NeuMF (without pre-training): 
 ```
 python NeuMF.py --dataset ml-1m --epochs 20 --batch_size 256 --num_factors 8 --layers [64,32,16,8] --reg_mf 0 --reg_layers [0,0,0,0] --num_neg 4 --lr 0.001 --learner adam --verbose 1 --out 1
+python NeuMF.py --dataset ml-1m --epochs 1 --batch_size 256 --num_factors 8 --layers [64,32,16,8] --reg_mf 0 --reg_layers [0,0,0,0] --num_neg 4 --lr 0.001 --learner adam --verbose 1 --out 1
+
 ```
 
 Run NeuMF (with pre-training):
