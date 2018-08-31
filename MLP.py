@@ -76,7 +76,7 @@ def get_model(num_users, num_items, layers = [20,10], reg_layers=[0,0]):
     vector = merge([user_latent, item_latent], mode = 'concat')
     
     # MLP layers
-    for idx in xrange(1, num_layer):
+    for idx in range(1, num_layer):
         layer = Dense(layers[idx], W_regularizer= l2(reg_layers[idx]), activation='relu', name = 'layer%d' %idx)
         vector = layer(vector)
         
@@ -91,15 +91,15 @@ def get_model(num_users, num_items, layers = [20,10], reg_layers=[0,0]):
 def get_train_instances(train, num_negatives):
     user_input, item_input, labels = [],[],[]
     num_users = train.shape[0]
-    for (u, i) in train.keys():
+    for (u, i) in list(train.keys()):
         # positive instance
         user_input.append(u)
         item_input.append(i)
         labels.append(1)
         # negative instances
-        for t in xrange(num_negatives):
+        for t in range(num_negatives):
             j = np.random.randint(num_items)
-            while train.has_key((u, j)):
+            while (u, j) in train:
                 j = np.random.randint(num_items)
             user_input.append(u)
             item_input.append(j)
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     
     topK = 10
     evaluation_threads = 1 #mp.cpu_count()
-    print("MLP arguments: %s " %(args))
+    print(("MLP arguments: %s " %(args)))
     model_out_file = 'Pretrain/%s_MLP_%s_%d.h5' %(args.dataset, args.layers, time())
     
     # Loading data
@@ -129,8 +129,8 @@ if __name__ == '__main__':
     dataset = Dataset(args.path + args.dataset)
     train, testRatings, testNegatives = dataset.trainMatrix, dataset.testRatings, dataset.testNegatives
     num_users, num_items = train.shape
-    print("Load data done [%.1f s]. #user=%d, #item=%d, #train=%d, #test=%d" 
-          %(time()-t1, num_users, num_items, train.nnz, len(testRatings)))
+    print(("Load data done [%.1f s]. #user=%d, #item=%d, #train=%d, #test=%d" 
+          %(time()-t1, num_users, num_items, train.nnz, len(testRatings))))
     
     # Build model
     model = get_model(num_users, num_items, layers, reg_layers)
@@ -147,11 +147,11 @@ if __name__ == '__main__':
     t1 = time()
     (hits, ndcgs) = evaluate_model(model, testRatings, testNegatives, topK, evaluation_threads)
     hr, ndcg = np.array(hits).mean(), np.array(ndcgs).mean()
-    print('Init: HR = %.4f, NDCG = %.4f [%.1f]' %(hr, ndcg, time()-t1))
+    print(('Init: HR = %.4f, NDCG = %.4f [%.1f]' %(hr, ndcg, time()-t1)))
     
     # Train model
     best_hr, best_ndcg, best_iter = hr, ndcg, -1
-    for epoch in xrange(epochs):
+    for epoch in range(epochs):
         t1 = time()
         # Generate training instances
         user_input, item_input, labels = get_train_instances(train, num_negatives)
@@ -166,13 +166,13 @@ if __name__ == '__main__':
         if epoch %verbose == 0:
             (hits, ndcgs) = evaluate_model(model, testRatings, testNegatives, topK, evaluation_threads)
             hr, ndcg, loss = np.array(hits).mean(), np.array(ndcgs).mean(), hist.history['loss'][0]
-            print('Iteration %d [%.1f s]: HR = %.4f, NDCG = %.4f, loss = %.4f [%.1f s]' 
-                  % (epoch,  t2-t1, hr, ndcg, loss, time()-t2))
+            print(('Iteration %d [%.1f s]: HR = %.4f, NDCG = %.4f, loss = %.4f [%.1f s]' 
+                  % (epoch,  t2-t1, hr, ndcg, loss, time()-t2)))
             if hr > best_hr:
                 best_hr, best_ndcg, best_iter = hr, ndcg, epoch
                 if args.out > 0:
                     model.save_weights(model_out_file, overwrite=True)
 
-    print("End. Best Iteration %d:  HR = %.4f, NDCG = %.4f. " %(best_iter, best_hr, best_ndcg))
+    print(("End. Best Iteration %d:  HR = %.4f, NDCG = %.4f. " %(best_iter, best_hr, best_ndcg)))
     if args.out > 0:
-        print("The best MLP model is saved to %s" %(model_out_file))
+        print(("The best MLP model is saved to %s" %(model_out_file)))

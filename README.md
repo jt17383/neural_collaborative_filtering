@@ -21,6 +21,7 @@ The instruction of commands has been clearly stated in the codes (see the  parse
 Run GMF:
 ```
 python GMF.py --dataset ml-1m --epochs 20 --batch_size 256 --num_factors 8 --regs [0,0] --num_neg 4 --lr 0.001 --learner adam --verbose 1 --out 1
+python GMF.py --dataset ml-1m --epochs 1 --batch_size 256 --num_factors 8 --regs [0,0] --num_neg 4 --lr 0.001 --learner adam --verbose 1 --out 1
 ```
 
 Run MLP:
