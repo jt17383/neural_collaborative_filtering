@@ -63,9 +63,9 @@ def get_model(num_users, num_items, layers = [20,10], reg_layers=[0,0]):
     user_input = Input(shape=(1,), dtype='int32', name = 'user_input')
     item_input = Input(shape=(1,), dtype='int32', name = 'item_input')
 
-    MLP_Embedding_User = Embedding(input_dim = num_users, output_dim = layers[0]/2, name = 'user_embedding',
+    MLP_Embedding_User = Embedding(input_dim = num_users, output_dim = int( layers[0]/2), name = 'user_embedding',
                                   init = init_normal, W_regularizer = l2(reg_layers[0]), input_length=1)
-    MLP_Embedding_Item = Embedding(input_dim = num_items, output_dim = layers[0]/2, name = 'item_embedding',
+    MLP_Embedding_Item = Embedding(input_dim = num_items, output_dim = int( layers[0]/2), name = 'item_embedding',
                                   init = init_normal, W_regularizer = l2(reg_layers[0]), input_length=1)   
     
     # Crucial to flatten an embedding vector!
