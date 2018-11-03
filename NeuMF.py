@@ -5,27 +5,21 @@ He Xiangnan et al. Neural Collaborative Filtering. In WWW 2017.
 
 @author: Xiangnan He (xiangnanhe@gmail.com)
 '''
+import argparse
 from datetime import datetime
+from time import time
 
 import numpy as np
-
-import theano
-import theano.tensor as T
-import keras
-from keras import backend as K
 from keras import initializations
-from keras.regularizers import l1, l2, l1l2
-from keras.models import Sequential, Model
-from keras.layers.core import Dense, Lambda, Activation
-from keras.layers import Embedding, Input, Dense, merge, Reshape, Merge, Flatten, Dropout
+from keras.layers import Embedding, Input, Dense, merge, Flatten
+from keras.models import Model
 from keras.optimizers import Adagrad, Adam, SGD, RMSprop
-from evaluate import evaluate_model
-from Dataset import Dataset
-from time import time
-import sys
-import GMF, MLP
-import argparse
+from keras.regularizers import l2
 
+import GMF
+import MLP
+from Dataset import Dataset, get_train_instances
+from evaluate import evaluate_model
 #################### Arguments ####################
 from metrics_exporter import MetricsExporter
 
@@ -139,23 +133,6 @@ def load_pretrain_model(model, gmf_model, mlp_model, num_layers):
     model.get_layer('prediction').set_weights([0.5*new_weights, 0.5*new_b])    
     return model
 
-def get_train_instances(train, num_negatives):
-    user_input, item_input, labels = [],[],[]
-    num_users = train.shape[0]
-    for (u, i) in list(train.keys()):
-        # positive instance
-        user_input.append(u)
-        item_input.append(i)
-        labels.append(1)
-        # negative instances
-        for t in range(num_negatives):
-            j = np.random.randint(num_items)
-            while (u, j) in train:
-                j = np.random.randint(num_items)
-            user_input.append(u)
-            item_input.append(j)
-            labels.append(0)
-    return user_input, item_input, labels
 
 if __name__ == '__main__':
     args = parse_args()

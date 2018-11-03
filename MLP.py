@@ -17,7 +17,7 @@ from keras.models import Model
 from keras.optimizers import Adagrad, Adam, SGD, RMSprop
 from keras.regularizers import l2
 
-from Dataset import Dataset
+from Dataset import Dataset, get_train_instances
 from evaluate import evaluate_model
 #################### Arguments ####################
 from metrics_exporter import MetricsExporter
@@ -88,23 +88,6 @@ def get_model(num_users, num_items, num_factors, layers = [20,10], reg_layers=[0
     
     return model
 
-def get_train_instances(train, num_negatives):
-    user_input, item_input, labels = [],[],[]
-    num_users = train.shape[0]
-    for (u, i) in list(train.keys()):
-        # positive instance
-        user_input.append(u)
-        item_input.append(i)
-        labels.append(1)
-        # negative instances
-        for t in range(num_negatives):
-            j = np.random.randint(num_items)
-            while (u, j) in train:
-                j = np.random.randint(num_items)
-            user_input.append(u)
-            item_input.append(j)
-            labels.append(0)
-    return user_input, item_input, labels
 
 if __name__ == '__main__':
     args = parse_args()
