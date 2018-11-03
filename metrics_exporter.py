@@ -1,19 +1,17 @@
 
 import os
 import csv
+import json
 from datetime import datetime
 
 
 class MetricsExporter():
     def __init__(self):
-        self.model = None
         self.model_name = None
         self.dataset_name = None
         self.output_dir = 'results'
-        self.run_id = None
-        self.num_factors = None
-        self.num_negatives = None
-
+        self.run_id = datetime.now().strftime('%y%m%d%H%M')
+        self.hyperparams = None
 
         if not os.path.exists(self.output_dir):
             os.mkdir(self.output_dir)
@@ -30,13 +28,14 @@ class MetricsExporter():
                 'timestamp',
                 'model',
                 'dataset',
-                'factors',
-                'negatives',
+                'hyperparams',
                 'epoch',
                 'metric',
                 'value'
                 ]
             )
+
+        hyperparams  = json.dumps(self.hyperparams)
 
         for metric_name, values in data.items():
             for epoch, metric_value in enumerate(values):
@@ -44,8 +43,7 @@ class MetricsExporter():
                     self.run_id,
                     self.model_name,
                     self.dataset_name,
-                    self.num_factors,
-                    self.num_negatives,
+                    hyperparams,
                     epoch,
                     metric_name,
                     metric_value])

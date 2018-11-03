@@ -237,11 +237,20 @@ if __name__ == '__main__':
     if args.out > 0:
         print(("The best NeuMF model is saved to %s" %(model_out_file)))
 
+    hyperparams = {}
+    hyperparams['num_factors'] = args.num_factors
+    hyperparams['num_negatives'] = num_negatives
+    hyperparams['regs'] = args.reg_mf
+    hyperparams['lr'] = args.lr
+    hyperparams['learner'] = args.learner
+    hyperparams['layers'] = args.layers
+    hyperparams['reg_layers'] = args.reg_layers
+    hyperparams['mf_pretrain'] = args.mf_pretrain
+    hyperparams['mlp_pretrain'] = args.mlp_pretrain
+
+
     exporter = MetricsExporter()
     exporter.dataset_name  = args.dataset
     exporter.model_name = 'NeuMF'
-    exporter.model = model
-    exporter.num_factors = mf_dim
-    exporter.num_negatives = num_negatives
-    exporter.run_id = run_id
+    exporter.hyperparams = hyperparams
     exporter.export(metrics)

@@ -91,7 +91,6 @@ if __name__ == '__main__':
     epochs = args.epochs
     batch_size = args.batch_size
     verbose = args.verbose
-    run_id = datetime.now().strftime('%y%m%d%H%M')
 
     topK = args.topk
     evaluation_threads = 1 #mp.cpu_count()
@@ -172,11 +171,15 @@ if __name__ == '__main__':
     if args.out > 0:
         print(("The best GMF model is saved to %s" %(model_out_file)))
 
+    hyperparams = {}
+    hyperparams['num_factors'] = num_factors
+    hyperparams['num_negatives'] = num_negatives
+    hyperparams['regs'] = args.regs
+    hyperparams['lr'] = args.lr
+    hyperparams['learner'] = args.learner
+
     exporter = MetricsExporter()
     exporter.dataset_name  = args.dataset
     exporter.model_name = 'GMF'
-    exporter.model = model
-    exporter.num_factors = num_factors
-    exporter.num_negatives = num_negatives
-    exporter.run_id = run_id
+    exporter.hyperparams = hyperparams
     exporter.export(metrics)

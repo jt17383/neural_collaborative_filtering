@@ -102,7 +102,6 @@ if __name__ == '__main__':
     batch_size = args.batch_size
     epochs = args.epochs
     verbose = args.verbose
-    run_id = datetime.now().strftime('%y%m%d%H%M')
     
     topK = args.topk
     evaluation_threads = 1 #mp.cpu_count()
@@ -181,11 +180,16 @@ if __name__ == '__main__':
     if args.out > 0:
         print(("The best MLP model is saved to %s" %(model_out_file)))
 
+    hyperparams = {}
+    hyperparams['num_factors'] = num_factors
+    hyperparams['num_negatives'] = num_negatives
+    hyperparams['lr'] = args.lr
+    hyperparams['learner'] = args.learner
+    hyperparams['layers'] = args.layers
+    hyperparams['reg_layers'] = args.reg_layers
+
     exporter = MetricsExporter()
     exporter.dataset_name  = args.dataset
     exporter.model_name = 'MLP'
-    exporter.model = model
-    exporter.num_factors = num_factors
-    exporter.num_negatives = num_negatives
-    exporter.run_id = run_id
+    exporter.hyperparams = hyperparams
     exporter.export(metrics)
