@@ -6,23 +6,21 @@ He Xiangnan et al. Neural Collaborative Filtering. In WWW 2017.
 
 @author: Xiangnan He (xiangnanhe@gmail.com)
 '''
+import argparse
+from time import time
+from datetime import datetime
+
 import numpy as np
-import theano.tensor as T
-import keras
-from keras import backend as K
 from keras import initializations
-from keras.models import Sequential, Model, load_model, save_model
-from keras.layers.core import Dense, Lambda, Activation
-from keras.layers import Embedding, Input, Dense, merge, Reshape, Merge, Flatten
+from keras.layers import Embedding, Input, Dense, merge, Flatten
+from keras.models import Model
 from keras.optimizers import Adagrad, Adam, SGD, RMSprop
 from keras.regularizers import l2
+
 from Dataset import Dataset
 from evaluate import evaluate_model
-from time import time
-import multiprocessing as mp
-import sys
-import math
-import argparse
+from metrics_exporter import MetricsExporter
+
 
 #################### Arguments ####################
 def parse_args():
@@ -41,6 +39,8 @@ def parse_args():
                         help="Regularization for user and item embeddings.")
     parser.add_argument('--num_neg', type=int, default=4,
                         help='Number of negative instances to pair with a positive instance.')
+    parser.add_argument('--topk', type=int, default=10,
+                        help='Number of @k.')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Learning rate.')
     parser.add_argument('--learner', nargs='?', default='adam',
@@ -108,12 +108,22 @@ if __name__ == '__main__':
     epochs = args.epochs
     batch_size = args.batch_size
     verbose = args.verbose
-    
-    topK = 10
+    run_id = datetime.now().strftime('%y%m%d%H%M')
+
+    topK = args.topk
     evaluation_threads = 1 #mp.cpu_count()
     print(("GMF arguments: %s" %(args)))
-    model_out_file = 'Pretrain/%s_GMF_%d_%d.h5' %(args.dataset, num_factors, time())
-    
+    model_out_file = 'pretrain/%s_GMF_%d_%d.h5' %(args.dataset, num_factors, num_negatives)
+
+    metrics = {}
+    metrics['loss'] = []
+    metrics['loss_eval'] = []
+    metrics[f'hr@{topK}'] = []
+    metrics['ndcg'] = []
+    metrics['duration'] = []
+    metrics['duration_eval'] = []
+
+
     # Loading data
     t1 = time()
     dataset = Dataset(args.path + args.dataset)
@@ -152,15 +162,24 @@ if __name__ == '__main__':
         # Training
         hist = model.fit([np.array(user_input), np.array(item_input)], #input
                          np.array(labels), # labels 
-                         batch_size=batch_size, nb_epoch=1, verbose=0, shuffle=True)
+                         batch_size=batch_size, nb_epoch=1, verbose=1, shuffle=True)
         t2 = time()
-        
+        duration = t2-t1
+        metrics['loss'].append( hist.history['loss'][0])
+        metrics['duration'].append( duration)
+
         # Evaluation
         if epoch %verbose == 0:
             (hits, ndcgs) = evaluate_model(model, testRatings, testNegatives, topK, evaluation_threads)
             hr, ndcg, loss = np.array(hits).mean(), np.array(ndcgs).mean(), hist.history['loss'][0]
+            metrics[f'hr@{topK}'].append(hr)
+            metrics['ndcg'].append( ndcg)
+            metrics['loss_eval'].append( loss)
+            duration_eval = time()-t2
+            metrics['duration_eval'].append(duration_eval)
+
             print(('Iteration %d [%.1f s]: HR = %.4f, NDCG = %.4f, loss = %.4f [%.1f s]' 
-                  % (epoch,  t2-t1, hr, ndcg, loss, time()-t2)))
+                  % (epoch,  duration, hr, ndcg, loss, duration_eval)))
             if hr > best_hr:
                 best_hr, best_ndcg, best_iter = hr, ndcg, epoch
                 if args.out > 0:
@@ -169,3 +188,12 @@ if __name__ == '__main__':
     print(("End. Best Iteration %d:  HR = %.4f, NDCG = %.4f. " %(best_iter, best_hr, best_ndcg)))
     if args.out > 0:
         print(("The best GMF model is saved to %s" %(model_out_file)))
+
+    exporter = MetricsExporter()
+    exporter.dataset_name  = args.dataset
+    exporter.model_name = 'GMF'
+    exporter.model = model
+    exporter.num_factors = num_factors
+    exporter.num_negatives = num_negatives
+    exporter.run_id = run_id
+    exporter.export(metrics)

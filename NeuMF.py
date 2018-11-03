@@ -5,6 +5,8 @@ He Xiangnan et al. Neural Collaborative Filtering. In WWW 2017.
 
 @author: Xiangnan He (xiangnanhe@gmail.com)
 '''
+from datetime import datetime
+
 import numpy as np
 
 import theano
@@ -25,6 +27,9 @@ import GMF, MLP
 import argparse
 
 #################### Arguments ####################
+from metrics_exporter import MetricsExporter
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Run NeuMF.")
     parser.add_argument('--path', nargs='?', default='Data/',
@@ -45,6 +50,8 @@ def parse_args():
                         help="Regularization for each MLP layer. reg_layers[0] is the regularization for embeddings.")
     parser.add_argument('--num_neg', type=int, default=4,
                         help='Number of negative instances to pair with a positive instance.')
+    parser.add_argument('--topk', type=int, default=10,
+                        help='Number of @k.')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Learning rate.')
     parser.add_argument('--learner', nargs='?', default='adam',
@@ -164,11 +171,21 @@ if __name__ == '__main__':
     verbose = args.verbose
     mf_pretrain = args.mf_pretrain
     mlp_pretrain = args.mlp_pretrain
+    run_id = datetime.now().strftime('%y%m%d%H%M')
             
-    topK = 10
+    topK = args.topk
     evaluation_threads = 1#mp.cpu_count()
     print(("NeuMF arguments: %s " %(args)))
-    model_out_file = 'Pretrain/%s_NeuMF_%d_%s_%d.h5' %(args.dataset, mf_dim, args.layers, time())
+    model_out_file = 'pretrain/%s_NeuMF_%d_%d.h5' %(args.dataset, mf_dim, num_negatives)
+
+    metrics = {}
+    metrics['loss'] = []
+    metrics['loss_eval'] = []
+    metrics[f'hr@{topK}'] = []
+    metrics['ndcg'] = []
+    metrics['duration'] = []
+    metrics['duration_eval'] = []
+
 
     # Loading data
     t1 = time()
@@ -193,7 +210,7 @@ if __name__ == '__main__':
     if mf_pretrain != '' and mlp_pretrain != '':
         gmf_model = GMF.get_model(num_users,num_items,mf_dim)
         gmf_model.load_weights(mf_pretrain)
-        mlp_model = MLP.get_model(num_users,num_items, layers, reg_layers)
+        mlp_model = MLP.get_model(num_users,num_items,mf_dim, layers, reg_layers)
         mlp_model.load_weights(mlp_pretrain)
         model = load_pretrain_model(model, gmf_model, mlp_model, len(layers))
         print(("Load pretrained GMF (%s) and MLP (%s) models done. " %(mf_pretrain, mlp_pretrain)))
@@ -217,13 +234,23 @@ if __name__ == '__main__':
                          np.array(labels), # labels 
                          batch_size=batch_size, nb_epoch=1, verbose=0, shuffle=True)
         t2 = time()
+        duration = t2-t1
+        metrics['loss'].append( hist.history['loss'][0])
+        metrics['duration'].append( duration)
+
         
         # Evaluation
         if epoch %verbose == 0:
             (hits, ndcgs) = evaluate_model(model, testRatings, testNegatives, topK, evaluation_threads)
             hr, ndcg, loss = np.array(hits).mean(), np.array(ndcgs).mean(), hist.history['loss'][0]
+            metrics[f'hr@{topK}'].append(hr)
+            metrics['ndcg'].append( ndcg)
+            metrics['loss_eval'].append( loss)
+            duration_eval = time()-t2
+            metrics['duration_eval'].append(duration_eval)
+
             print(('Iteration %d [%.1f s]: HR = %.4f, NDCG = %.4f, loss = %.4f [%.1f s]' 
-                  % (epoch,  t2-t1, hr, ndcg, loss, time()-t2)))
+                  % (epoch,  duration, hr, ndcg, loss, duration_eval)))
             if hr > best_hr:
                 best_hr, best_ndcg, best_iter = hr, ndcg, epoch
                 if args.out > 0:
@@ -232,3 +259,12 @@ if __name__ == '__main__':
     print(("End. Best Iteration %d:  HR = %.4f, NDCG = %.4f. " %(best_iter, best_hr, best_ndcg)))
     if args.out > 0:
         print(("The best NeuMF model is saved to %s" %(model_out_file)))
+
+    exporter = MetricsExporter()
+    exporter.dataset_name  = args.dataset
+    exporter.model_name = 'NeuMF'
+    exporter.model = model
+    exporter.num_factors = mf_dim
+    exporter.num_negatives = num_negatives
+    exporter.run_id = run_id
+    exporter.export(metrics)
