@@ -107,7 +107,7 @@ if __name__ == '__main__':
     topK = args.topk
     evaluation_threads = 1 #mp.cpu_count()
     print(("MLP arguments: %s " %(args)))
-    model_out_file = 'pretrain/%s_MLP_%s_%d.h5' %(args.dataset, num_factors, num_negatives)
+    model_out_file = 'pretrain/%s_MLP_%s.h5' %(args.dataset, num_factors)
 
     metrics = {}
     metrics['loss'] = []

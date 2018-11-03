@@ -153,7 +153,7 @@ if __name__ == '__main__':
     topK = args.topk
     evaluation_threads = 1#mp.cpu_count()
     print(("NeuMF arguments: %s " %(args)))
-    model_out_file = 'pretrain/%s_NeuMF_%d_%d.h5' %(args.dataset, mf_dim, num_negatives)
+    model_out_file = 'pretrain/%s_NeuMF_%d.h5' %(args.dataset, mf_dim)
 
     metrics = {}
     metrics['loss'] = []

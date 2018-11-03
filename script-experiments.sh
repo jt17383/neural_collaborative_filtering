@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 export KERAS_BACKEND=theano
 
 FACTORS=( 8 16 32 64 )
@@ -24,9 +26,9 @@ NEG=10
 for n in $(seq 1 $NEG);
 do
     echo "negatives: "$n
-    python GMF.py --path $INPUT_DIR --dataset $DATASET --epochs $EPOCHS --num_neg $n
-    python MLP.py --path $INPUT_DIR --dataset $DATASET --epochs $EPOCHS --num_neg $n
-    python NeuMF.py --path $INPUT_DIR --dataset $DATASET --epochs $EPOCHS --num_neg $n
+    python GMF.py --path $INPUT_DIR --dataset $DATASET --epochs $EPOCHS --num_neg $n --out 0
+    python MLP.py --path $INPUT_DIR --dataset $DATASET --epochs $EPOCHS --num_neg $n --out 0
+    python NeuMF.py --path $INPUT_DIR --dataset $DATASET --epochs $EPOCHS --num_neg $n --out 0
 done;
 
 
@@ -35,7 +37,7 @@ TOPK=10
 for k in $(seq 1 $TOPK);
 do
     echo "negatives: "$n
-    python GMF.py --path $INPUT_DIR --dataset $DATASET --epochs $EPOCHS --topk $k
-    python MLP.py --path $INPUT_DIR --dataset $DATASET --epochs $EPOCHS --topk $k
-    python NeuMF.py --path $INPUT_DIR --dataset $DATASET --epochs $EPOCHS --topk $k
+    python GMF.py --path $INPUT_DIR --dataset $DATASET --epochs $EPOCHS --topk $k --out 0
+    python MLP.py --path $INPUT_DIR --dataset $DATASET --epochs $EPOCHS --topk $k --out 0
+    python NeuMF.py --path $INPUT_DIR --dataset $DATASET --epochs $EPOCHS --topk $k --out 0
 done;

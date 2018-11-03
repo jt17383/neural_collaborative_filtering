@@ -7,8 +7,6 @@ Processing datasets.
 import scipy.sparse as sp
 import numpy as np
 
-from GMF import num_items
-
 
 class Dataset(object):
     '''
@@ -79,6 +77,7 @@ class Dataset(object):
 
 
 def get_train_instances(train, num_negatives):
+    num_users, num_items = train.shape
     user_input, item_input, labels = [],[],[]
     num_users = train.shape[0]
     #todo: possibly issue here -> leaking test positives as train negatives, fix: check on all positives (train + test)
