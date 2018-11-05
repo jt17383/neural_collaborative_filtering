@@ -63,7 +63,7 @@ def parse_args():
 def init_normal(shape, name=None):
     return initializations.normal(shape, scale=0.01, name=name)
 
-def get_model(num_users, num_items, mf_dim=10, layers=[10], reg_layers=[0], reg_mf=0):
+def get_model(num_users, num_items, num_factors=8, layers=[8], reg_layers=[0], reg_mf=0):
     assert len(layers) == len(reg_layers)
     num_layer = len(layers) #Number of layers in the MLP
     # Input variables
@@ -71,14 +71,14 @@ def get_model(num_users, num_items, mf_dim=10, layers=[10], reg_layers=[0], reg_
     item_input = Input(shape=(1,), dtype='int32', name = 'item_input')
     
     # Embedding layer
-    MF_Embedding_User = Embedding(input_dim = num_users, output_dim = mf_dim, name = 'mf_embedding_user',
+    MF_Embedding_User = Embedding(input_dim = num_users, output_dim = num_factors, name ='mf_embedding_user',
                                   init = init_normal, W_regularizer = l2(reg_mf), input_length=1)
-    MF_Embedding_Item = Embedding(input_dim = num_items, output_dim = mf_dim, name = 'mf_embedding_item',
+    MF_Embedding_Item = Embedding(input_dim = num_items, output_dim = num_factors, name ='mf_embedding_item',
                                   init = init_normal, W_regularizer = l2(reg_mf), input_length=1)   
 
-    MLP_Embedding_User = Embedding(input_dim = num_users, output_dim = int(layers[0]/2), name = "mlp_embedding_user",
+    MLP_Embedding_User = Embedding(input_dim = num_users, output_dim = num_factors, name = "mlp_embedding_user",
                                   init = init_normal, W_regularizer = l2(reg_layers[0]), input_length=1)
-    MLP_Embedding_Item = Embedding(input_dim = num_items, output_dim = int(layers[0]/2), name = 'mlp_embedding_item',
+    MLP_Embedding_Item = Embedding(input_dim = num_items, output_dim = num_factors, name = 'mlp_embedding_item',
                                   init = init_normal, W_regularizer = l2(reg_layers[0]), input_length=1)   
     
     # MF part
@@ -138,7 +138,7 @@ if __name__ == '__main__':
     args = parse_args()
     num_epochs = args.epochs
     batch_size = args.batch_size
-    mf_dim = args.num_factors
+    num_factors = args.num_factors
     layers = eval(args.layers)
     reg_mf = args.reg_mf
     reg_layers = eval(args.reg_layers)
@@ -153,7 +153,7 @@ if __name__ == '__main__':
     topK = args.topk
     evaluation_threads = 1#mp.cpu_count()
     print(("NeuMF arguments: %s " %(args)))
-    model_out_file = 'pretrain/%s_NeuMF_%d.h5' %(args.dataset, mf_dim)
+    model_out_file = 'pretrain/%s_NeuMF_%d.h5' %(args.dataset, num_factors)
 
     metrics = {}
     metrics['loss'] = []
@@ -173,7 +173,7 @@ if __name__ == '__main__':
           %(time()-t1, num_users, num_items, train.nnz, len(testRatings))))
     
     # Build model
-    model = get_model(num_users, num_items, mf_dim, layers, reg_layers, reg_mf)
+    model = get_model(num_users, num_items, num_factors, layers, reg_layers, reg_mf)
     if learner.lower() == "adagrad": 
         model.compile(optimizer=Adagrad(lr=learning_rate), loss='binary_crossentropy')
     elif learner.lower() == "rmsprop":
@@ -185,9 +185,9 @@ if __name__ == '__main__':
     
     # Load pretrain model
     if mf_pretrain != '' and mlp_pretrain != '':
-        gmf_model = GMF.get_model(num_users,num_items,mf_dim)
+        gmf_model = GMF.get_model(num_users, num_items, num_factors)
         gmf_model.load_weights(mf_pretrain)
-        mlp_model = MLP.get_model(num_users,num_items,mf_dim, layers, reg_layers)
+        mlp_model = MLP.get_model(num_users, num_items, num_factors, layers, reg_layers)
         mlp_model.load_weights(mlp_pretrain)
         model = load_pretrain_model(model, gmf_model, mlp_model, len(layers))
         print(("Load pretrained GMF (%s) and MLP (%s) models done. " %(mf_pretrain, mlp_pretrain)))

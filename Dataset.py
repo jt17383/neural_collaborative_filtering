@@ -89,6 +89,7 @@ def get_train_instances(train, num_negatives):
         # negative instances
         for t in range(num_negatives):
             j = np.random.randint(num_items)
+            #todo: issue it may be also duplicanting negatives entries
             while (u, j) in train:
                 j = np.random.randint(num_items)
             user_input.append(u)
